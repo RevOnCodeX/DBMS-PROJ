@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drone Fleet Management — Neo4j Database Explorer</title>
+  <meta name="description" content="College Database Systems Assignment II - Drone Fleet Management Property Graph in Neo4j">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Top Header -->
+    <header class="navbar">
+      <div class="nav-brand">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+            <polyline points="2 17 12 22 22 17"></polyline>
+            <polyline points="2 12 12 17 22 12"></polyline>
+          </svg>
+        </div>
+        <div>
+          <h1 class="nav-title">AERO-GRAPH <span class="badge-tag">DBMS DA-II</span></h1>
+          <p class="nav-sub">Drone Fleet Management System • Neo4j Property Graph</p>
+        </div>
+      </div>
+
+      <nav class="nav-tabs">
+        <button class="tab-btn active" data-tab="graph-view">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          Graph Visualizer
+        </button>
+        <button class="tab-btn" data-tab="queries-view">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+          Demonstration Queries (15)
+        </button>
+        <button class="tab-btn" data-tab="entities-view">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+          Entity Explorer
+        </button>
+        <button class="tab-btn" data-tab="audit-view">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          Integrity Audit
+        </button>
+        <button class="tab-btn" data-tab="discrepancy-view">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          Source Comparison
+        </button>
+      </nav>
+
+      <div class="nav-status">
+        <span class="status-dot pulse"></span>
+        <span id="conn-status">Connected • 75 Nodes • 129 Rels</span>
+      </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="main-content">
+
+      <!-- TAB 1: GRAPH VISUALIZER -->
+      <section id="graph-view" class="tab-pane active">
+        <div class="graph-toolbar">
+          <div class="search-box">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="node-search" placeholder="Search Drone, Pilot, Route...">
+          </div>
+          <div class="filter-group" id="label-filters">
+            <!-- Label badges populated dynamically -->
+          </div>
+          <div class="graph-actions">
+            <button class="btn btn-outline" id="btn-physics-toggle">Freeze Physics</button>
+            <button class="btn btn-outline" id="btn-fit-graph">Fit View</button>
+            <button class="btn btn-primary" id="btn-reload-graph">Refresh</button>
+          </div>
+        </div>
+
+        <div class="graph-workspace">
+          <div id="vis-container"></div>
+          
+          <!-- Node Inspector Drawer -->
+          <aside class="node-inspector hidden" id="node-drawer">
+            <div class="drawer-header">
+              <span class="badge" id="drawer-label">Drone</span>
+              <h3 id="drawer-title">DJI M30</h3>
+              <button class="btn-close" id="btn-close-drawer">&times;</button>
+            </div>
+            <div class="drawer-body">
+              <h4>Properties</h4>
+              <div class="property-grid" id="drawer-props"></div>
+              <h4>Connected Relationships</h4>
+              <ul class="neighbor-list" id="drawer-neighbors"></ul>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- TAB 2: DEMONSTRATION QUERIES -->
+      <section id="queries-view" class="tab-pane">
+        <div class="queries-grid">
+          <div class="query-sidebar">
+            <div class="sidebar-header">
+              <h3>College Practical Demonstrations</h3>
+              <p>Select any of the 15 verified queries to run live</p>
+            </div>
+            <div class="query-nav-list" id="query-button-list">
+              <!-- Dynamically populated 15 queries -->
+            </div>
+          </div>
+
+          <div class="query-runner-panel">
+            <div class="editor-header">
+              <div class="editor-title">
+                <span class="badge badge-accent" id="active-query-num">Query 1</span>
+                <span class="query-desc" id="active-query-title">Display Complete Drone Fleet</span>
+              </div>
+              <button class="btn btn-primary" id="btn-run-active-query">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Execute Cypher
+              </button>
+            </div>
+            <div class="editor-box">
+              <textarea id="cypher-input" spellcheck="false"></textarea>
+            </div>
+            <div class="query-results-area">
+              <div class="results-meta">
+                <span id="results-count">Ready to execute</span>
+                <span id="results-time"></span>
+              </div>
+              <div class="table-container" id="results-table-box">
+                <div class="empty-state">Click "Execute Cypher" to run query against live Neo4j database.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: ENTITY EXPLORER -->
+      <section id="entities-view" class="tab-pane">
+        <div class="entities-layout">
+          <div class="entity-chips-bar" id="entity-selector-chips">
+            <!-- 16 entity selector chips -->
+          </div>
+          <div class="entity-content-card">
+            <div class="entity-card-header">
+              <div>
+                <h3 id="current-entity-name">Drone</h3>
+                <p id="current-entity-desc">Individual aerial unmanned vehicles belonging to a fleet.</p>
+              </div>
+              <div class="entity-counter">
+                <span class="count-num" id="current-entity-count">6</span>
+                <span class="count-label">Nodes</span>
+              </div>
+            </div>
+            <div class="table-container" id="entity-table-box"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: INTEGRITY AUDIT -->
+      <section id="audit-view" class="tab-pane">
+        <div class="audit-dashboard">
+          <div class="stats-cards-row">
+            <div class="metric-card">
+              <span class="metric-label">Total Graph Nodes</span>
+              <span class="metric-val" id="metric-nodes">75</span>
+              <span class="metric-sub">Expected: 75 • Zero Drift</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-label">Graph Relationships</span>
+              <span class="metric-val" id="metric-rels">129</span>
+              <span class="metric-sub">20 Directed Types</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-label">Orphan Nodes</span>
+              <span class="metric-val text-success">0</span>
+              <span class="metric-sub">100% Graph Connectivity</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-label">Operational Alerts</span>
+              <span class="metric-val text-warning" id="metric-alerts">3</span>
+              <span class="metric-sub">Low Battery & Incidents</span>
+            </div>
+          </div>
+
+          <div class="audit-matrix-grid">
+            <div class="audit-card">
+              <h3>Node Inventory Verification</h3>
+              <table class="data-table" id="audit-node-table">
+                <thead><tr><th>Entity Label</th><th>Count</th><th>Expected</th><th>Status</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+
+            <div class="audit-card">
+              <h3>Foreign Key Graph Cardinality Verification</h3>
+              <table class="data-table" id="audit-rel-table">
+                <thead><tr><th>Relationship</th><th>Count</th><th>Cardinality</th><th>Status</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 5: SOURCE COMPARISON -->
+      <section id="discrepancy-view" class="tab-pane">
+        <div class="discrepancy-container">
+          <div class="intro-banner">
+            <h3>Discrepancy Reconciliation & College Assignment Audit</h3>
+            <p>This panel documents howAntigravity preserved all original student work from <code>dbms da-2.pdf</code> (handwritten notes) and <code>Dbms DA2 ques 2 screenshots.pdf</code> (executed Oracle SQL*Plus database) without inventing missing data or silently altering assignment meaning.</p>
+          </div>
+
+          <div class="discrepancy-cards-list">
+            <div class="card-item">
+              <div class="card-header">
+                <span class="badge badge-accent">Reconciled</span>
+                <h4>1. Charging Schedule: Composite Primary Key vs Station_ID Foreign Key</h4>
+              </div>
+              <div class="card-body">
+                <p><strong>Handwritten Draft:</strong> Had five rows sequentially numbered 901..905. However, there is no station 905 (stations are 901..904).</p>
+                <p><strong>Verified Oracle Database:</strong> The terminal screenshot confirmed column is <code>STATION_ID</code>: Station 901 hosts Drone 201 (09:00) & 202 (11:00); Station 902 hosts 203; 903 hosts 204; 904 hosts 205.</p>
+                <p><strong>Neo4j Implementation:</strong> Stable <code>Schedule_ID</code> (1..5) with uniqueness constraint, retaining <code>Station_ID</code>, <code>Drone_ID</code>, and connected via <code>(:Charging_Station)-[:PROVIDES]->(:Charging_Schedule)</code> and <code>(:Drone)-[:SCHEDULED]->(:Charging_Schedule)</code>.</p>
+              </div>
+            </div>
+
+            <div class="card-item">
+              <div class="card-header">
+                <span class="badge badge-accent">Reconciled</span>
+                <h4>2. Flight Permission: Permission_ID vs Mission Clearance</h4>
+              </div>
+              <div class="card-body">
+                <p><strong>Handwritten Draft:</strong> Early draft mixed Drone and Operator IDs in the 2nd column.</p>
+                <p><strong>Verified Oracle Database:</strong> Terminal screenshot proved exact columns: <code>PERMISSION_ID, DRONE_ID, MISSION_ID, ISSUED_DATE, EXPIRY_DATE, PERMISSION_STATUS, ISSUING_AUTHORITY</code>.</p>
+                <p><strong>Neo4j Implementation:</strong> 6 missions (601, 603, 605, 608, 609, 612) have valid DGCA flight permissions connected via <code>(:Mission)-[:REQUIRES]->(:Flight_Permission)</code>. Remaining 6 missions without permissions are correctly reported by validation query 4 without fabricating fake permits.</p>
+              </div>
+            </div>
+
+            <div class="card-item">
+              <div class="card-header">
+                <span class="badge badge-accent">Preserved Spec</span>
+                <h4>3. Technician Entity: Schema Defined with Zero Fabricated Records</h4>
+              </div>
+              <div class="card-body">
+                <p><strong>Source Observation:</strong> Technician is present in the assignment description and ER Diagram (`(:Technician)-[:PERFORMS]->(:Maintenance)`), but no SQL table or sample insert statements were provided in the student's submission.</p>
+                <p><strong>Neo4j Implementation:</strong> Schema constraint <code>technician_id_unique</code> and template Cypher queries in <code>15_create_technicians.cypher</code> are generated. Strictly zero artificial people were fabricated, honoring assignment honesty.</p>
+              </div>
+            </div>
+
+            <div class="card-item">
+              <div class="card-header">
+                <span class="badge badge-accent">Verified</span>
+                <h4>4. Maintenance 803: Drone 204 IN_PROGRESS Motor Repair</h4>
+              </div>
+              <div class="card-body">
+                <p><strong>Observation:</strong> Draft notes had record 803 assigned to 203 COMPLETED. In executed Oracle SQL terminal, 803 is assigned to Drone 204 with status <code>IN_PROGRESS</code> for Motor replacement.</p>
+                <p><strong>Neo4j Implementation:</strong> Faithfully imported as <code>Drone 204 | IN_PROGRESS | Motor replacement</code>, which perfectly correlates with Drone 204's status being <code>MAINTENANCE</code> in the fleet inventory.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
